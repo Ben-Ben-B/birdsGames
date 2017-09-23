@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title></title>
+    <style>
+        canvas {
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+<canvas width="800px" height="600px"></canvas>
+<script src="../js/sky.js"></script>
+<script src="../js/birds.js"></script>
+<script src="../js/land.js"></script>
+<script src="../js/pipe.js"></script>
+<script>
+    //加载图片
+    function loadImg(imgArr,callback){
+        var imgs={};
+        var count=0;
+        for(var i=0;i<imgArr.length;i++){
+            var img=new Image();
+             img.src="../images/"+imgArr[i]+".png";
+            imgs[imgArr[i]]=img;
+            img.onload=function(){
+                count++;
+                if(count===imgArr.length){
+                    callback(imgs)
+                }
+
+            }
+        }
+    }
+
+    var c = document.querySelector("canvas");
+    var ctx = c.getContext("2d");
+    loadImg(["birds","sky","land","pipe1","pipe2"],function(imgs){
+        var skyImg=imgs.sky;
+        var birdsImg=imgs.birds;
+        var skyX=0;
+            var startTime=new Date();
+            var endTime=new Date()
+        //创造小鸟
+        var birds=new Birds({
+            ctx:ctx,
+            birdsImg:birdsImg
+        })
+        //创造天空
+        var sky1=new Sky({
+            ctx:ctx,
+            skyImg:skyImg,
+            skyX:skyX
+        })
+        var sky2=new Sky({
+            ctx:ctx,
+            skyImg:skyImg,
+            skyX:skyImg.width
+        });
+        //创造陆地
+        var lands=[];
+        for(var i=0;i<4;i++){
+             var land=new Land({
+                ctx:ctx,
+                 landImg:imgs.land,
+                 landX:i*imgs.land.width,
+                 landY:(c.height-imgs.land.height)
+            })
+            lands.push(land)
+        }
+        //绘制管道
+        var pipes=[];
+        for(var i=0;i<7;i++){
+            var pipe=new Pipe({
+                ctx:ctx,
+                pipeImgTop:imgs.pipe2,
+                pipeImgBottom:imgs.pipe1,
+                canvasX:300+(3*imgs.pipe2.width)*i
+            })
+            pipes.push(pipe)
+        }
+            function fly(){
+                endTime=new Date();
+                var offset=endTime-startTime;
+                startTime=endTime;
+                ctx.clearRect(0,0, c.width, c.height);
+                /*清除画布并不会清除之后添加的路径，所以需要开启新路径，以免受到之前路径的影响*/
+               ctx.beginPath();
+                //绘制天空
+                sky1.drawSky();
+                sky2.drawSky();
+                //绘制小鸟
+                birds.drawBirds(offset);
+                //绘制管道
+                for(var i=0;i<pipes.length;i++){
+                    pipes[i].drawPipe();
+                }
+                //绘制陆地
+                for(var i=0;i<lands.length;i++){
+                    lands[i].drawLand();
+                }
+                //判断小鸟是否超出边界
+                if(birds.canvasY-birds.birdsH+10<0||birds.canvasY> c.height-land.img.height+5){
+                    return;
+                }
+                //判断小鸟是否撞到管道
+                console.log(birdsImg.width/6);
+                if(ctx.isPointInPath(birds.canvasX+birdsImg.width / 6,birds.canvasY + birdsImg.height / 2)){
+                    return;
+                }
+                window.requestAnimationFrame(fly)
+            }
+
+            fly()
+            c.onclick=function(){
+                birds.birdsSpeed=-0.18
+            }
+    })
+
+</script>
+</body>
+</html>
